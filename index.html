@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ARIRANG 隨機歌統計</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff6fb;--card:#ffffff;--ink:#4a3b5c;--sub:#9a8aa8;--line:#f0dff0;--main:#b79df0;--btn:#ffe1ef;
+--c0:#ffb3d1;--c1:#b9e3ff;--c2:#ffe59a;--c3:#c8f0c0;--c4:#d9c4ff;--c5:#ffc9a8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+--bg:#241d33;--card:#322846;--ink:#f6eefc;--sub:#b9a9cc;--line:#47395f;--main:#b79df0;--btn:#4a3a63}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.5}
+main{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+h1{margin:6px 0 2px;font-size:clamp(10px,3.4vw,20px);white-space:nowrap;text-align:center}
+.sub{text-align:center;color:var(--sub);font-size:13px;margin:0 0 14px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:12px;margin-bottom:12px}
+label{font-size:13px;color:var(--sub);display:block;margin-bottom:4px}
+.stats{display:flex;justify-content:space-around;text-align:center}
+.stats b{display:block;font-size:24px}
+.stats span{font-size:12px;color:var(--sub)}
+.bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.name{font-weight:700;font-size:16px;word-break:break-all}
+.album{display:block;margin-top:2px;font-size:12px;color:var(--main)}
+.track{background:var(--bg);border-radius:999px;height:26px;overflow:hidden}
+.fill{height:100%;border-radius:999px;min-width:0;transition:width .3s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:13px;font-weight:700;color:#4a3b5c}
+.ctl{display:flex;align-items:center;gap:10px;margin-top:8px}
+.cnt{min-width:34px;text-align:center;font-size:20px;font-weight:800;color:var(--main)}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-left:auto;justify-content:flex-end}
+.tag{font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--sub)}
+.tools{display:flex;justify-content:flex-end;margin:0 2px 8px}
+.tools button{border:0;background:none;color:var(--main);font:inherit;font-size:13px;cursor:pointer}
+.empty{text-align:center;color:var(--sub);padding:24px 0}
+.qhead{margin:10px 0 4px}
+.irow{display:flex;justify-content:space-between;padding:6px 2px;border-bottom:1px dashed var(--line);font-size:14px}
+.irow b{color:var(--main)}
+</style>
+</head>
+<body>
+<main>
+<h1>💜BTS WORLD TOUR ‘ARIRANG’ 隨機歌曲統計💜</h1>
+<p class="sub">記錄每首隨機歌曲次數與場次（唯讀檢視版）</p>
+
+<div class="card stats">
+  <div><b id="sSongs">0</b><span>歌曲數</span></div>
+  <div><b id="sTotal">0</b><span>總次數</span></div>
+  <div><b id="sTop">-</b><span>最常出現</span></div>
+</div>
+
+<div class="card"><label>點選城市日期查詢歌曲</label><select id="filterChips" style="width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:9px 12px"></select></div>
+<div class="card"><label>點選歌曲查詢次數與場次</label><select id="songSel" style="width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:9px 12px"></select><div id="songInfo"></div></div>
+<div class="tools"><button id="sortBtn">排序：依次數 ↓</button></div>
+<div id="list"></div>
+</main>
+
+<script>
+var COLORS=["var(--c0)","var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)"];
+
+// 日後要更新唯讀網頁資料，只要把編輯版「匯出備份」的整段 JSON 貼上取代 DEFAULT_DATA = 後面的內容即可
+var DEFAULT_DATA = {"songs":[{"id":1795510449306,"name":"Answer: Love Myself","log":["Kaohsiung 2026/11/19"]},{"id":1795510459611,"name":"DNA","log":["Kaohsiung 2026/11/19","Goyang 2026/4/11","Arlington 2026/8/16"]},{"id":1795510474561,"name":"Sea","log":["Kaohsiung 2026/11/21"],"album":"LOVE YOURSELF 承 Her (2017) CD only"},{"id":1795510597944,"name":"Embarrassed","log":["Kaohsiung 2026/11/22"]},{"id":1795510611163,"name":"Boy With Luv","log":["Kaohsiung 2026/11/22","Tampa 2026/4/26","Brussels 2026/7/1","Paris 2026/7/17"]},{"id":1795510700195,"name":"Mikrokosmos","log":["Goyang 2026/4/9","Madrid 2026/6/27","Chicago 2026/8/28","Bogotá 2026/10/3"]},{"id":1795510828569,"name":"I Need U","log":["Goyang 2026/4/9","Stanford 2026/5/19","São Paulo 2026/10/30"]},{"id":1795510854508,"name":"Take Two","log":["Goyang 2026/4/11"]},{"id":1795510891524,"name":"Spring Day","log":["Goyang 2026/4/12","Mexico City 2026/5/10","Los Angeles 2026/9/6"]},{"id":1795510898071,"name":"Run","log":["Goyang 2026/4/12","East Rutherford 2026/8/1","Santiago 2026/10/14"]},{"id":1795511099688,"name":"Crystal Snow","log":["Tokyo 2026/4/17"],"album":"MIC Drop/DNA/Crystal Snow (2018)"},{"id":1795511220890,"name":"Dope","log":["Tokyo 2026/4/18","Stanford 2026/5/17","Toronto 2026/8/22"]},{"id":1795511263070,"name":"For You","log":["Tokyo 2026/4/18"],"album":"FOR YOU (2015)"},{"id":1795511424883,"name":"Permission To Dance","log":["Tampa 2026/4/25","Las Vegas 2026/5/23","Arlington 2026/8/15"]},{"id":1795511469682,"name":"Magic Shop","log":["Tampa 2026/4/25","Busan 2026/6/13","Los Angeles 2026/9/1"]},{"id":1795511727357,"name":"Pied Piper","log":["Tampa 2026/4/26","Munich 2026/7/11","Los Angeles 2026/9/5"]},{"id":1795517620159,"name":"Life Goes On","log":["Tampa 2026/4/28","London 2026/7/6"]},{"id":1795517644467,"name":"Silver Spoon (뱁새)","log":["Tampa 2026/4/28","Munich 2026/7/11","Los Angeles 2026/9/2","São Paulo 2026/10/28"],"album":"花樣年華 pt.2"},{"id":1795517673758,"name":"On","log":["El Paso 2026/5/2","Brussels 2026/7/2"]},{"id":1795517676458,"name":"Wings","log":["El Paso 2026/5/2","Toronto 2026/8/22","Lima 2026/10/7","Madrid 2026/6/26"],"album":"WINGS (2016)"},{"id":1795517686369,"name":"Dionysus","log":["El Paso 2026/5/3","London 2026/7/6","Buenos Aires 2026/10/21"]},{"id":1795517693699,"name":"Best Of Me","log":["El Paso 2026/5/3","Madrid 2026/6/27","Baltimore 2026/8/11"]},{"id":1795519553074,"name":"So What","log":["Mexico City 2026/5/7","Paris 2026/7/18","Bogotá 2026/10/2"],"album":"Love Yourself 轉 Tear (2018)"},{"id":1795519642046,"name":"We Are Bulletproof Pt.2","log":["Mexico City 2026/5/9","Bogotá 2026/10/3"]},{"id":1795519647443,"name":"Just One Day","log":["Mexico City 2026/5/9","Baltimore 2026/8/11"],"album":"Skool Luv Affair (2014)"},{"id":1795519665703,"name":"Airplane Pt.2","log":["Mexico City 2026/5/10","São Paulo 2026/10/30","Madrid 2026/6/26"]},{"id":1795520345223,"name":"N.O (엔.오)","log":["Stanford 2026/5/16","Foxborough 2026/8/6"],"album":"O!RUL8,2?"},{"id":1795520413706,"name":"Anpanman","log":["Stanford 2026/5/16","Las Vegas 2026/5/27"]},{"id":1795520537856,"name":"Blood Sweat & Tears","log":["Stanford 2026/5/17","Munich 2026/7/12"]},{"id":1795520614821,"name":"No More Dream","log":["Stanford 2026/5/19","Foxborough 2026/8/5"]},{"id":1795521536665,"name":"Go Go","log":["Las Vegas 2026/5/23","East Rutherford 2026/8/2","Arlington 2026/8/15"]},{"id":1795521553463,"name":"Black Swan","log":["Las Vegas 2026/5/24","São Paulo 2026/10/28"]},{"id":1795521570303,"name":"Spine Breaker","log":["Las Vegas 2026/5/24","Santiago 2026/10/17"]},{"id":1795521604255,"name":"Attack On Bangtan","log":["Las Vegas 2026/5/27","Buenos Aires 2026/10/23"]},{"id":1795521625949,"name":"흥탄소년단","log":["Las Vegas 2026/5/28"],"album":"花樣年華 pt.1"},{"id":1795521671186,"name":"Danger","log":["Las Vegas 2026/5/28"]},{"id":1795521808731,"name":"八道江山 (팔도강산)","log":["Busan 2026/6/12","Lima 2026/10/9"]},{"id":1795521818204,"name":"Ma City","log":["Busan 2026/6/12"]},{"id":1795521863740,"name":"Dimple","log":["Busan 2026/6/13"]},{"id":1795521887165,"name":"Ddaeng (땡)","log":["Busan 2026/6/13","São Paulo 2026/10/31"],"album":"SoundCloud (2018)"},{"id":1795522133129,"name":"Tomorrow","log":["Brussels 2026/7/1","Chicago 2026/8/27"]},{"id":1795522168285,"name":"For Youth","log":["Brussels 2026/7/2"]},{"id":1795522228761,"name":"Young Forever","log":["London 2026/7/7","Buenos Aires 2026/10/23"],"album":"花樣年華 Young Forever (2016)"},{"id":1795522283143,"name":"Save ME","log":["Tokyo 2026/4/17","London 2026/7/7","Santiago 2026/10/14"]},{"id":1795522568683,"name":"Louder than Bombs","log":["Munich 2026/7/12"]},{"id":1795522632283,"name":"Jump","log":["Paris 2026/7/17","Santiago 2026/10/17"]},{"id":1795522656861,"name":"We Are Bulletproof: The Eternal","log":["Paris 2026/7/18","Lima 2026/10/9"]},{"id":1795522750955,"name":"Di-sease","log":["East Rutherford 2026/8/1"]},{"id":1795522777416,"name":"Autumn Leaves (고엽)","log":["East Rutherford 2026/8/2"],"album":"花樣年華 pt.2"},{"id":1795522876315,"name":"Paradise","log":["Foxborough 2026/8/5"],"album":"LOVE YOURSELF 轉 Tear (2018)"},{"id":1795523000241,"name":"Make It Right","log":["Foxborough 2026/8/6"]},{"id":1795523057263,"name":"Telepathy","log":["Baltimore 2026/8/10","Santiago 2026/10/16"]},{"id":1795523170326,"name":"Butterfly","log":["Arlington 2026/8/16"]},{"id":1795523232111,"name":"00:00 (Zero O'Clock)","log":["Toronto 2026/8/23"],"album":"MAP OF THE SOUL: 7 (2020)"},{"id":1795523305963,"name":"Outro : Tear","log":["Toronto 2026/8/23"]},{"id":1795523337494,"name":"Hip Hop Lover","log":["Chicago 2026/8/27"],"album":"Dark & Wild (2014)"},{"id":1795523394797,"name":"134340","log":["Chicago 2026/8/28"]},{"id":1795523480593,"name":"Happy Birthdsy to JK","log":["Los Angeles 2026/9/1"]},{"id":1795523496450,"name":"Love Maze","log":["Los Angeles 2026/9/2"]},{"id":1795524331280,"name":"HOME","log":["Los Angeles 2026/9/5","Lima 2026/10/7"]},{"id":1795524370540,"name":"Whalien 52","log":["Los Angeles 2026/9/6"]},{"id":1795524412494,"name":"Happy Birthday to RM","log":["Los Angeles 2026/9/6"]},{"id":1795524467791,"name":"I'm Fine","log":["Bogotá 2026/10/2"]},{"id":1795525018485,"name":"House of Cards","log":["Lima 2026/10/10"]},{"id":1795525031212,"name":"UGH!","log":["Lima 2026/10/10"]},{"id":1795525074791,"name":"Happy Birthday to Jimin","log":["Santiago 2026/10/14"]},{"id":1795525112878,"name":"Heartbeat","log":["Santiago 2026/10/16"],"album":"BTS World: Original Soundtrack (2019)"},{"id":1795525204949,"name":"Hold Me Tight","log":["Buenos Aires 2026/10/21"],"album":"花樣年華 pt.1 (2015)"},{"id":1795525324518,"name":"Lost","log":["Buenos Aires 2026/10/24"]},{"id":1795525342521,"name":"BTS Cypher 4","log":["Buenos Aires 2026/10/24"]},{"id":1795525460913,"name":"BTS Cypher Pt.3: Killer","log":["São Paulo 2026/10/31"]},{"id":1795526092693,"name":"Boy In Luv","log":["Kaohsiung 2026/11/21","Mexico City 2026/5/7","Baltimore 2026/8/10","Los Angeles 2026/9/1"]}],"sort":true,"filter":""};
+
+var state = Object.assign({songs:[],sort:true,filter:""}, DEFAULT_DATA);
+state.filter = "";
+
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+function concerts(){var set={};state.songs.forEach(function(s){s.log.forEach(function(c){if(c)set[c]=1;});});return Object.keys(set);}
+function lg(s){return state.filter?s.log.filter(function(c){return c===state.filter;}):s.log;}
+function tally(log){var m={};log.forEach(function(c){var k=c||"未註明";m[k]=(m[k]||0)+1;});return m;}
+function cinfo(c){var i=c.lastIndexOf(" "),m=c.slice(i+1).match(/^(\d+)\/(\d+)\/(\d+)$/),city=i<0?"":c.slice(0,i);return {c:c,d:m?(+m[1])*10000+(+m[2])*100+(+m[3]):99999999,lab:m?(m[0]+(city?" "+city:"")):c};}
+
+function render(){
+  var cs=concerts().map(cinfo).sort(function(a,b){return a.d-b.d;});
+  if(state.filter&&concerts().indexOf(state.filter)<0)state.filter="";
+  document.getElementById("filterChips").innerHTML='<option value="">全部場次</option>'+cs.map(function(o){return '<option value="'+esc(o.c).replace(/"/g,"&quot;")+'"'+(o.c===state.filter?' selected':'')+'>'+esc(o.lab)+'</option>';}).join("");
+  var songs=state.songs.filter(function(s){return !state.filter||lg(s).length>0;});
+  songs.sort(state.sort?function(a,b){return lg(b).length-lg(a).length;}:yearCmp);
+  var max=Math.max.apply(null,[1].concat(songs.map(function(s){return lg(s).length;})));
+  var total=songs.reduce(function(n,s){return n+lg(s).length;},0);
+  document.getElementById("sSongs").textContent=songs.length;
+  document.getElementById("sTotal").textContent=total;
+  var top=songs.slice().sort(function(a,b){return lg(b).length-lg(a).length;})[0];
+  document.getElementById("sTop").textContent=top&&lg(top).length?top.name:"-";
+  renderSongQ();
+  document.getElementById("sortBtn").textContent=state.sort?"排序：依次數 ↓":"排序：依專輯年份";
+  var list=document.getElementById("list");
+  if(!songs.length){list.innerHTML='<div class="empty">目前沒有歌曲紀錄 ✨</div>';return;}
+  list.innerHTML=songs.map(function(s){
+    var n=lg(s).length,w=Math.round(n/max*100),al=albumOf(s);
+    var t=tally(lg(s)),tags=Object.keys(t).map(function(k){return '<span class="tag">'+esc(k)+' ×'+t[k]+'</span>';}).join("");
+    var ci=state.songs.indexOf(s)%COLORS.length;
+    return '<div class="card"><div class="bar-top"><div><div class="name">'+esc(s.name)+'</div>'+(al?'<div class="album">💿 '+esc(al)+'</div>':'')+'</div></div>'
+    +'<div class="track"><div class="fill" style="width:'+w+'%;background:'+COLORS[ci]+'">'+(n?'♥':'')+'</div></div>'
+    +'<div class="ctl"><span class="cnt">'+n+'</span><div class="tags">'+tags+'</div></div></div>';
+  }).join("");
+}
+
+function find(id){return state.songs.filter(function(s){return String(s.id)===String(id);})[0];}
+var DB=[
+["ARIRANG (2026)","Body to Body|Hooligan|Aliens|FYA|2.0|No. 29|SWIM|Merry Go Round|NORMAL|Like Animals|they don’t know ’bout us|One More Night|Please|Into the Sun|ARMYRANG|ARMYRANG²"],
+["2 COOL 4 SKOOL (2013)","No More Dream|We Are Bulletproof Pt.2|Like|Outro: Circle Room Cypher|Hip Hop Phile"],
+["O!RUL8,2? (2013)","N.O|We On|Attack on Bangtan|Coffee|BTS Cypher Pt.1|Paldogangsan|If I Ruled the World"],
+["Skool Luv Affair (2014)","Boy In Luv|Just One Day|Tomorrow|BTS Cypher Pt.2: Triptych|Spine Breaker|Jump"],
+["Dark&Wild (2014)","Danger|War of Hormone|Let Me Know|Rain|Blanket Kick|24/7=Heaven|Look Here|Embarrassed|Does That Make Sense|Could You Turn Off Your Cellphone|BTS Cypher Pt.3: Killer"],
+["花樣年華 Pt.1 (2015)","I Need U|Dope|Boyz with Fun|Converse High|Moving On|Outro: Love Is Not Over"],
+["花樣年華 Pt.2 (2015)","Run|Butterfly|Whalien 52|Ma City|Silver Spoon|Baepsae|Autumn Leaves|House of Cards"],
+["花樣年華 Young Forever (2016)","Fire|Save ME|Epilogue: Young Forever"],
+["WINGS (2016)","Blood Sweat & Tears|Lie|Stigma|First Love|Reflection|MAMA|Awake|Lost|BTS Cypher 4|Am I Wrong|21st Century Girls|Two! Three!|Interlude: Wings|Begin|Where You From"],
+["You Never Walk Alone (2017)","Spring Day|Not Today|A Supplementary Story: You Never Walk Alone|Outro: Wings"],
+["LOVE YOURSELF 承 Her (2017)","DNA|Best of Me|Dimple|Pied Piper|MIC Drop|Go Go|Outro: Her|Intro: Serendipity|Serendipity"],
+["LOVE YOURSELF 轉 Tear (2018)","Fake Love|Singularity|The Truth Untold|Airplane pt.2|Anpanman|134340|Magic Shop|Outro: Tear|Love Maze"],
+["LOVE YOURSELF 結 Answer (2018)","Idol|Euphoria|Epiphany|I’m Fine|Answer: Love Myself|Trivia 起: Just Dance|Trivia 轉: Seesaw|Trivia 承: Love"],
+["MAP OF THE SOUL: PERSONA (2019)","Boy With Luv|Intro: Persona|Mikrokosmos|Make It Right|HOME|Jamais Vu|Dionysus"],
+["MAP OF THE SOUL: 7 (2020)","ON|Black Swan|Filter|My Time|Louder than bombs|UGH!|Zero O’Clock|Inner Child|Friends|Moon|We are Bulletproof: the Eternal|Outro: Ego|Interlude: Shadow|Respect"],
+["BE (2020)","Life Goes On|Dynamite|Blue & Grey|Telepathy|Fly To My Room|Stay|Dis-ease"],
+["Butter (2021 單曲)","Butter"],
+["Permission to Dance (2021 單曲)","Permission to Dance"],
+["Proof (2022)","Yet To Come|Run BTS|For Youth"],
+["Take Two (2023 單曲)","Take Two"]
+];
+function nk(s){return String(s).toLowerCase().replace(/[^\p{L}\p{N}]/gu,"");}
+var MAP={};DB.forEach(function(a){a[1].split("|").forEach(function(n){MAP[nk(n)]=a[0];});});
+var ALIAS={"春日":"Spring Day","봄날":"Spring Day","血汗淚":"Blood Sweat & Tears","피땀눈물":"Blood Sweat & Tears"};
+function albumOf(s){if(s.album)return s.album;var k=nk(s.name);if(ALIAS[k])k=nk(ALIAS[k]);return MAP[k]||"";}
+function yearOf(s){var m=albumOf(s).match(/\((\d{4})/);return m?+m[1]:9999;}
+function yearCmp(a,b){return yearOf(a)-yearOf(b)||albumOf(a).localeCompare(albumOf(b))||lg(b).length-lg(a).length||a.name.localeCompare(b.name,"en",{sensitivity:"base"});}
+
+var songQ="";
+function renderSongQ(){
+  var sel=document.getElementById("songSel"),info=document.getElementById("songInfo");
+  var ss=state.songs.filter(function(x){return x.log.length>0;}).sort(function(a,b){return a.name.localeCompare(b.name,"en",{sensitivity:"base"});});
+  if(!ss.some(function(x){return String(x.id)===String(songQ);}))songQ="";
+  sel.innerHTML='<option value="">選擇歌曲</option>'+ss.map(function(x){return '<option value="'+x.id+'"'+(String(x.id)===String(songQ)?' selected':'')+'>'+esc(x.name)+'</option>';}).join("");
+  var s=songQ?find(songQ):null;
+  if(!s){info.innerHTML="";return;}
+  var t=tally(s.log),rows=Object.keys(t).map(cinfo).sort(function(a,b){return a.d-b.d;}).map(function(o){return '<div class="irow"><span>'+esc(o.lab)+'</span><b>×'+t[o.c]+'</b></div>';}).join("");
+  info.innerHTML='<div class="qhead"><b>'+esc(s.name)+'</b>　共 '+s.log.length+' 次</div>'+rows;
+}
+
+document.getElementById("songSel").addEventListener("change",function(e){songQ=e.target.value;renderSongQ();});
+document.getElementById("sortBtn").addEventListener("click",function(){state.sort=!state.sort;render();});
+document.getElementById("filterChips").addEventListener("change",function(e){state.filter=e.target.value;render();});
+render();
+</script>
+</body>
+</html>
